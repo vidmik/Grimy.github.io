@@ -165,10 +165,10 @@ function read_save() {
 		auto_preset();
 	}
 
-	// let xp_ratio = 1 + game.global.bestFluffyExp / game.global.fluffyExp;
+	// let xp_ratio = 1 + game.stats.bestFluffyExp.valueTotal / game.global.fluffyExp;
 	// let he_ratio = 1 + game.global.bestHelium / game.global.totalHeliumEarned;
 	// xp_ratio = log(xp_ratio) * input('weight-atk');
-	// he_ratio = log(sqrt(he_ratio)) * (input('weight-atk') + input('weight-he')) +
+	// he_ratio = log(he_ratio) * 0.8 * input('weight-atk') +
 		// log(he_ratio) / log(1.3) * log((1 + 0.25 / (1 + 0.25 * game.portal.Cunning.level)) * (1 + 0.6 / (1 + 0.6 * game.portal.Curious.level))) * input('weight-xp');
 	// console.log("suggested XP weight:", input('weight-he') * xp_ratio / he_ratio);
 
@@ -362,9 +362,10 @@ function parse_perks(fixed: string, unlocks: string) {
 		Motivation_II:  new Perk(50e3,  1e3,  add(1)),
 		Power_II:       new Perk(20e3,  500,  add(1)),
 		Toughness_II:   new Perk(20e3,  500,  add(1)),
-		Capable:        new Perk(1e8,   0,    level => 1,    10,   10),
+		Capable:        new Perk(1e8,   0,    l => 1,    10,   10),
 		Cunning:        new Perk(1e11,  0,    add(25)),
 		Curious:        new Perk(1e14,  0,    add(60)),
+		Classy:         new Perk(1e17,  0,    mult(1.015 ** 2)),
 		Overkill:       new Perk(1e6,   0,    add(500),  30),
 		Resourceful:    new Perk(50e3,  0,    mult(-5)),
 		Coordinated:    new Perk(150e3, 0,    mult(-2)),
@@ -424,7 +425,7 @@ function optimize(params: any) {
 	let he_left = total_he;
 	let {
 		Looting_II, Carpentry_II, Motivation_II, Power_II, Toughness_II,
-		Capable, Cunning, Curious,
+		Capable, Cunning, Curious, Classy,
 		Overkill, Resourceful, Coordinated, Siphonology, Anticipation,
 		Resilience, Meditation, Relentlessness, Carpentry, Artisanistry,
 		Range, Agility, Bait, Trumps, Pheromones,
@@ -479,7 +480,7 @@ function optimize(params: any) {
 		return 10 * (mod.taunt + territory * (mod.taunt - 1) * 111) * carp;
 	} : () => {
 		let carp = Carpentry.bonus * Carpentry_II.bonus;
-		let bonus = 3 + log(gem_income() / Resourceful.bonus) / log(1.4);
+		let bonus = 3 + log(base_housing * gem_income() / Resourceful.bonus) / log(1.4);
 		let territory = Trumps.bonus * zone;
 		return 10 * (base_housing * bonus + territory) * carp * mod.taunt + mod.dg * carp;
 	};
@@ -554,7 +555,7 @@ function optimize(params: any) {
 
 	// Fracional number of Amalgamators expected
 	function gators() {
-		if ((game && game.global.version < 4.8) || zone < 230 || mod.soldiers > 1 || jobless)
+		if (zone < 230 || mod.soldiers > 1 || jobless)
 			return 0;
 
 		let ooms = log(trimps() / group_size[Coordinated.level]) / log(10);
@@ -609,7 +610,7 @@ function optimize(params: any) {
 		return soldiers() * (block + health);
 	}
 
-	const xp = () => Cunning.bonus * Curious.bonus;
+	const xp = () => Cunning.bonus * Curious.bonus * Classy.bonus;
 	const agility = () => 1 / Agility.bonus;
 	const helium = () => base_helium * looting() + 45;
 	const overkill = () => Overkill.bonus;
@@ -737,6 +738,6 @@ function optimize(params: any) {
 		--Toughness_II.level;
 		he_left += Toughness_II.cost;
 	}
-	
+
 	return [he_left, perks];
 }
