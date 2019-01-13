@@ -362,22 +362,22 @@ function parse_perks(fixed: string, unlocks: string) {
 		Motivation_II:  new Perk(50e3,  1e3,  add(1)),
 		Power_II:       new Perk(20e3,  500,  add(1)),
 		Toughness_II:   new Perk(20e3,  500,  add(1)),
-		Capable:        new Perk(1e8,   0,    l => 1,    10,   10),
+		Capable:        new Perk(1e8,   0,    l => 1,       10,   10),
 		Cunning:        new Perk(1e11,  0,    add(25)),
 		Curious:        new Perk(1e14,  0,    add(60)),
-		Classy:         new Perk(1e17,  0,    mult(1.015 ** 2)),
-		Overkill:       new Perk(1e6,   0,    add(500),  30),
+		Classy:         new Perk(1e17,  0,    mult(3.0225), 50),
+		Overkill:       new Perk(1e6,   0,    add(500),     30),
 		Resourceful:    new Perk(50e3,  0,    mult(-5)),
 		Coordinated:    new Perk(150e3, 0,    mult(-2)),
 		Siphonology:    new Perk(100e3, 0,    l => pow(1 + l, 0.1), 3),
-		Anticipation:   new Perk(1000,  0,    add(6),    10),
+		Anticipation:   new Perk(1000,  0,    add(6),       10),
 		Resilience:     new Perk(100,   0,    mult(10)),
-		Meditation:     new Perk(75,    0,    add(1),    7),
+		Meditation:     new Perk(75,    0,    add(1),       7),
 		Relentlessness: new Perk(75,    0,    l => 1 + 0.05 * l * (1 + 0.3 * l), 10),
 		Carpentry:      new Perk(25,    0,    mult(10)),
 		Artisanistry:   new Perk(15,    0,    mult(-5)),
-		Range:          new Perk(1,     0,    add(1),    10),
-		Agility:        new Perk(4,     0,    mult(-5),  20),
+		Range:          new Perk(1,     0,    add(1),       10),
+		Agility:        new Perk(4,     0,    mult(-5),     20),
 		Bait:           new Perk(4,     0,    add(100)),
 		Trumps:         new Perk(3,     0,    add(20)),
 		Pheromones:     new Perk(3,     0,    add(10)),
@@ -396,7 +396,7 @@ function parse_perks(fixed: string, unlocks: string) {
 		if (!m)
 			throw 'Enter a list of perk levels, such as “power=42, toughness=51”.';
 
-		let tier2 = m[1].match(/2$|II$/);
+		let tier2 = m[1].match(/2$|II$/i);
 		let name = m[1].replace(/[ _]?(2|II)/i, '').replace(/^OK/i, 'O').replace(/^Looty/i, 'L');
 		let regex = new RegExp(`^${name}[a-z]*${tier2 ? '_II' : ''}$`, 'i');
 		let matches = Object.keys(perks).filter(p => p.match(regex));
@@ -687,6 +687,8 @@ function optimize(params: any) {
 	}
 
 	// Minimum levels on perks
+	console.time();
+
 	for (let name in perks) {
 		let perk = perks[name];
 		if (perk.cost_increment)
@@ -715,7 +717,7 @@ function optimize(params: any) {
 	let sorted_perks: Perk[] = Object.keys(perks).map(name => perks[name]).filter(perk => perk.levellable(he_left));
 
 	for (let x = 0.999; x > 1e-12; x *= x) {
-		let he_target = he_left * x;
+		let he_target = total_he * x;
 		recompute_marginal_efficiencies();
 		sorted_perks.sort((a, b) => b.gain / b.cost - a.gain / a.cost);
 
@@ -738,6 +740,8 @@ function optimize(params: any) {
 		--Toughness_II.level;
 		he_left += Toughness_II.cost;
 	}
+
+	console.timeEnd();
 
 	return [he_left, perks];
 }
